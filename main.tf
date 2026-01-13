@@ -162,4 +162,3 @@ module "blog_sg" {
 
   egress_rules = ["all-all"]
 }
-
