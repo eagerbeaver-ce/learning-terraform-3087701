@@ -86,52 +86,29 @@ module "autoscaling" {
 
 module "blog_alb" {
   source  = "terraform-aws-modules/alb/aws"
-  version = "~> 9.0" # Upgrading to match the modern ASG module
+  version = "~> 9.0"
 
   name    = "blog-alb"
   vpc_id  = module.blog_vpc.vpc_id
   subnets = module.blog_vpc.public_subnets
-  
-  # Ensure the ALB's own security group allows traffic from your IP
-  security_group_ingress_rules = {
-    all_http = {
-      from_port   = 80
-      to_port     = 80
-      protocol    = "tcp"
-      description = "HTTP web traffic"
-      cidr_ipv4   = "213.41.3.224/28"
-    }
-  }
-  
-  security_group_egress_rules = {
-    all_traffic = {
-      description      = "Allow all egress traffic"
-      protocol         = "-1"
-      from_port        = 0
-      to_port          = 0
-      cidr_ipv4        = "0.0.0.0/0"
-    }
-  }
 
-  # Updated Map Syntax for Target Groups
+  # ... security_group_ingress_rules and other settings ...
+
   target_groups = {
     blog-tg = {
-      backend_protocol                  = "HTTP"
-      backend_port                      = 8080
-      target_type                       = "instance"
-      deregistration_delay              = 10
-      load_balancing_algorithm_type     = "round_robin"
+      backend_protocol = "HTTP"
+      backend_port     = 8080
+      target_type      = "instance"
       
+      # THE FIX: This prevents the error by telling the module 
+      # that the ASG will handle the instance registration.
+      create_attachment = false
+
       health_check = {
         enabled             = true
-        interval            = 30
         path                = "/"
         port                = "traffic-port"
-        healthy_threshold   = 3
-        unhealthy_threshold = 3
-        timeout             = 5
-        protocol            = "HTTP"
-        matcher             = "200-399"
+        # ... rest of health check ...
       }
     }
   }
@@ -144,10 +121,6 @@ module "blog_alb" {
         target_group_key = "blog-tg"
       }
     }
-  }
-
-  tags = {
-    Environment = "dev"
   }
 }
 
