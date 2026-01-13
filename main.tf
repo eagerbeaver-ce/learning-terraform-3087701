@@ -39,7 +39,7 @@ module "autoscaling" {
   source  = "terraform-aws-modules/autoscaling/aws"
   version = "9.1.0"
 
-  name = "$var{var.environment.name}-blog-asg"
+  name = "blog-asg"
 
   # ASG Capacity settings
   min_size                  = var.asg_min_size
