@@ -38,17 +38,47 @@ module "blog_vpc" {
 module "autoscaling" {
   source  = "terraform-aws-modules/autoscaling/aws"
   version = "9.1.0"
+
+  name = "blog-asg"
+
+  # ASG Capacity settings
+  min_size                  = 1
+  max_size                  = 2
+  desired_capacity          = 1
+  wait_for_capacity_timeout = 0
+  health_check_type         = "ELB"
+
+  # Network settings
+  vpc_zone_identifier = module.blog_vpc.public_subnets
+  security_groups     = [module.blog_sg.security_group_id]
+
+  # Launch Template settings
+  create_launch_template = true
+  image_id               = data.aws_ami.app_ami.id
+  instance_type          = var.instance_type
   
-  name = "blog"
-  min_size = 1
-  max_size = 2
+  # Ensure the instance has a public IP if in a public subnet
+  network_interfaces = [
+    {
+      delete_on_termination = true
+      description           = "eth0"
+      device_index          = 0
+      associate_public_ip_address = true
+    }
+  ]
 
-  vpc_zone_identifier   = module.blog_vpc.public_subnets
-  target_group_arns     = module.blog_alb.target_group_arns
-  security_groups       = [module.blog_sg.security_group_id]
+  # Traffic Source (Replaces target_group_arns)
+  traffic_source_attachments = {
+    alb = {
+      traffic_source_arn  = module.blog_alb.target_group_arns[0]
+      traffic_source_type = "elbv2"
+    }
+  }
 
-  image_id           = data.aws_ami.app_ami.id
-  instance_type = var.instance_type
+  tags = {
+    Environment = "dev"
+    Project     = "blog"
+  }
 }
 
 
