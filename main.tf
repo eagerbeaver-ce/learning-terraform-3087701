@@ -44,6 +44,7 @@ module "autoscaling" {
   max_size = 2
 
   vpc_zone_identifier   = module.blog_vpc.public_subnets
+  target_group_arns     = module.blog_alb.target_group_arns
   security_groups       = [module.blog_sg.security_group_id]
 
   image_id           = data.aws_ami.app_ami.id
@@ -101,8 +102,3 @@ module "blog_sg" {
   
 }
 
-# Create a new load balancer attachment
-resource "aws_autoscaling_attachment" "blog-lb-attachment" {
-  autoscaling_group_name = module.autoscaling.this_autoscaling_group_name
-  alb_target_group_arn   = module.blog_alb.target_group_arns[0]
-}
