@@ -43,7 +43,8 @@ module "blog_sg" {
   ingress_cidr_blocks = ["213.41.3.224/28"]
 
   egress_rules = ["all-all"]
-  ingress_cidr_blocks = ["213.41.3.224/28"]
+  egress_cidr_blocks = ["0.0.0.0/0"]
+  
 }
 
 resource "aws_security_group" "blog" {
