@@ -21,7 +21,7 @@ data "aws_vpc" "default" {
 module "blog_vpc" {
   source = "terraform-aws-modules/vpc/aws"
 
-  name = var.environment.name
+  name = "${var.environment.name}-blog_vpc"
   cidr = "${var.environment.network_prefix}.0.0/16"
 
   azs             = ["us-west-2a", "us-west-2b", "us-west-2c"]
@@ -39,7 +39,7 @@ module "autoscaling" {
   source  = "terraform-aws-modules/autoscaling/aws"
   version = "9.1.0"
 
-  name = "blog-asg"
+  name = "$var{var.environment.name}-blog-asg"
 
   # ASG Capacity settings
   min_size                  = var.asg_min_size
@@ -89,7 +89,7 @@ module "blog_alb" {
   source  = "terraform-aws-modules/alb/aws"
   version = "~> 9.0"
 
-  name    = "blog-alb"
+  name    = "${var.environment.name}-blog-alb"
   vpc_id  = module.blog_vpc.vpc_id
   subnets = module.blog_vpc.public_subnets
 
