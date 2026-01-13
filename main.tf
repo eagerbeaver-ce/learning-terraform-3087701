@@ -47,6 +47,7 @@ module "autoscaling" {
   desired_capacity          = 1
   wait_for_capacity_timeout = 0
   health_check_type         = "ELB"
+  health_check_grace_period = 300 # Wait 5 minutes before checking health
 
   # Network settings
   vpc_zone_identifier = module.blog_vpc.public_subnets
@@ -122,7 +123,12 @@ module "blog_alb" {
         enabled             = true
         path                = "/"
         port                = "traffic-port"
-        matcher             = "200-399"
+        # Allow 200 (OK) and 302 (Redirect)
+        matcher             = "200-399" 
+        interval            = 30
+        timeout             = 5
+        healthy_threshold   = 2
+        unhealthy_threshold = 2
       }
     }
   }
@@ -140,14 +146,20 @@ module "blog_sg" {
   source  = "terraform-aws-modules/security-group/aws"
   version = "5.3.1"
 
-
   vpc_id = module.blog_vpc.vpc_id
-  name  = "blog"
-  ingress_rules = ["http-80-tcp", "https-443-tcp"]
-  ingress_cidr_blocks = ["213.41.3.224/28"]
+  name   = "blog-instance-sg"
+
+  # IMPORTANT: Allow the ALB to reach the instances on port 8080
+  ingress_with_source_security_group_id = [
+    {
+      from_port   = 8080
+      to_port     = 8080
+      protocol    = "tcp"
+      description = "Allow health checks from ALB"
+      source_security_group_id = module.blog_alb.security_group_id
+    }
+  ]
 
   egress_rules = ["all-all"]
-  egress_cidr_blocks = ["0.0.0.0/0"]
-  
 }
 
