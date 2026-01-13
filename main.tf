@@ -100,8 +100,9 @@ module "blog_sg" {
   egress_cidr_blocks = ["0.0.0.0/0"]
   
 }
+
 # Create a new load balancer attachment
 resource "aws_autoscaling_attachment" "blog-lb-attachment" {
-  autoscaling_group_name = aws_autoscaling_group.autoscaling.id
-  elb                    = aws_elb.blog_alb.id
+  autoscaling_group_name = module.autoscaling.this_autoscaling_group_name
+  alb_target_group_arn   = module.blog_alb.target_group_arns[0]
 }
