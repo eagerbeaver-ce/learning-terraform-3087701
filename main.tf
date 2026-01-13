@@ -50,11 +50,7 @@ module "autoscaling" {
   instance_type = var.instance_type
 }
 
-# Create a new ALB Target Group attachment
-resource "aws_autoscaling_attachment" "blog-alb-target-group" {
-  autoscaling_group_name = aws_autoscaling_group.autoscaling.id
-  # lb_target_group_arn    = aws_lb_target_group.example.arn
-}
+
 
 module "blog_alb" {
   source  = "terraform-aws-modules/alb/aws"
@@ -104,4 +100,8 @@ module "blog_sg" {
   egress_cidr_blocks = ["0.0.0.0/0"]
   
 }
-
+# Create a new load balancer attachment
+resource "aws_autoscaling_attachment" "blog-lb-attachment" {
+  autoscaling_group_name = aws_autoscaling_group.autoscaling.id
+  elb                    = aws_elb.blog_alb.id
+}
