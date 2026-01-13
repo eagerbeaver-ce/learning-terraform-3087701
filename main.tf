@@ -52,8 +52,8 @@ module "autoscaling" {
 
 # Create a new ALB Target Group attachment
 resource "aws_autoscaling_attachment" "blog-alb-target-group" {
-  autoscaling_group_name = aws_autoscaling_group.blog-alb-target-group.id
-  lb_target_group_arn    = aws_lb_target_group.blog-alb-target-group.arn
+  autoscaling_group_name = aws_autoscaling_group.autoscaling.id
+  # lb_target_group_arn    = aws_lb_target_group.example.arn
 }
 
 module "blog_alb" {
