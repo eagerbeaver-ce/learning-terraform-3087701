@@ -92,23 +92,37 @@ module "blog_alb" {
   vpc_id  = module.blog_vpc.vpc_id
   subnets = module.blog_vpc.public_subnets
 
-  # ... security_group_ingress_rules and other settings ...
+  # --- THIS IS THE MISSING PIECE ---
+  # This opens port 80 on the Load Balancer itself
+  security_group_ingress_rules = {
+    all_http = {
+      from_port   = 80
+      to_port     = 80
+      ip_protocol = "tcp"
+      description = "Allow HTTP from my IP"
+      cidr_ipv4   = "213.41.3.224/28" 
+    }
+  }
+
+  security_group_egress_rules = {
+    all_traffic = {
+      ip_protocol = "-1"
+      cidr_ipv4   = "0.0.0.0/0"
+    }
+  }
+  # ---------------------------------
 
   target_groups = {
     blog-tg = {
-      backend_protocol = "HTTP"
-      backend_port     = 8080
-      target_type      = "instance"
-      
-      # THE FIX: This prevents the error by telling the module 
-      # that the ASG will handle the instance registration.
+      backend_protocol  = "HTTP"
+      backend_port      = 8080 # Tomcat port
+      target_type       = "instance"
       create_attachment = false
-
       health_check = {
         enabled             = true
         path                = "/"
         port                = "traffic-port"
-        # ... rest of health check ...
+        matcher             = "200-399"
       }
     }
   }
@@ -117,9 +131,7 @@ module "blog_alb" {
     http = {
       port     = 80
       protocol = "HTTP"
-      forward = {
-        target_group_key = "blog-tg"
-      }
+      forward  = { target_group_key = "blog-tg" }
     }
   }
 }
