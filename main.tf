@@ -67,11 +67,11 @@ module "autoscaling" {
     }
   ]
 
-  # Traffic Source (Replaces target_group_arns)
+  # Traffic Source (Updated for v9.1.0 compatibility)
   traffic_source_attachments = {
     alb = {
-      traffic_source_arn  = module.blog_alb.target_group_arns[0]
-      traffic_source_type = "elbv2"
+      traffic_source_identifier = module.blog_alb.target_group_arns[0]
+      traffic_source_type       = "elbv2"
     }
   }
 
