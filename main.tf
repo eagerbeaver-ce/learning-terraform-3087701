@@ -69,10 +69,11 @@ module "autoscaling" {
 
   # Traffic Source (Updated for v9.1.0 compatibility)
   traffic_source_attachments = {
-    alb = {
-      traffic_source_identifier = module.blog_alb.target_group_arns[0]
-      traffic_source_type       = "elbv2"
-    }
+      alb = {
+        # Use the key 'blog-tg' defined in the ALB module above
+        traffic_source_identifier = module.blog_alb.target_groups["blog-tg"].arn
+        traffic_source_type       = "elbv2"
+      }
   }
 
   tags = {
@@ -85,32 +86,65 @@ module "autoscaling" {
 
 module "blog_alb" {
   source  = "terraform-aws-modules/alb/aws"
-  version = "~> 6.0"
+  version = "~> 9.0" # Upgrading to match the modern ASG module
 
-  name = "blog-alb"
-
-  load_balancer_type = "application"
-
-  vpc_id             = module.blog_vpc.vpc_id
-  subnets            = module.blog_vpc.public_subnets
-  security_groups    = [module.blog_sg.security_group_id]
-
-  target_groups = [
-    {
-      name_prefix      = "blog-"
-      backend_protocol = "HTTP"
-      backend_port     = 80
-      target_type      = "instance"
+  name    = "blog-alb"
+  vpc_id  = module.blog_vpc.vpc_id
+  subnets = module.blog_vpc.public_subnets
+  
+  # Ensure the ALB's own security group allows traffic from your IP
+  security_group_ingress_rules = {
+    all_http = {
+      from_port   = 80
+      to_port     = 80
+      protocol    = "tcp"
+      description = "HTTP web traffic"
+      cidr_ipv4   = "213.41.3.224/28"
     }
-  ]
-
-  http_tcp_listeners = [
-    {
-      port               = 80
-      protocol           = "HTTP"
-      target_group_index = 0
+  }
+  
+  security_group_egress_rules = {
+    all_traffic = {
+      description      = "Allow all egress traffic"
+      protocol         = "-1"
+      from_port        = 0
+      to_port          = 0
+      cidr_ipv4        = "0.0.0.0/0"
     }
-  ]
+  }
+
+  # Updated Map Syntax for Target Groups
+  target_groups = {
+    blog-tg = {
+      backend_protocol                  = "HTTP"
+      backend_port                      = 8080
+      target_type                       = "instance"
+      deregistration_delay              = 10
+      load_balancing_algorithm_type     = "round_robin"
+      
+      health_check = {
+        enabled             = true
+        interval            = 30
+        path                = "/"
+        port                = "traffic-port"
+        healthy_threshold   = 3
+        unhealthy_threshold = 3
+        timeout             = 5
+        protocol            = "HTTP"
+        matcher             = "200-399"
+      }
+    }
+  }
+
+  listeners = {
+    http = {
+      port     = 80
+      protocol = "HTTP"
+      forward = {
+        target_group_key = "blog-tg"
+      }
+    }
+  }
 
   tags = {
     Environment = "dev"
